@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAGE AI — Tutor Inteligente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="frontend/css/global.css" />
+  <link rel="stylesheet" href="frontend/css/landing.css" />
+</head>
+<body>
+
+  <nav class="nav" id="nav">
+    <div class="nav__inner">
+      <a href="index.html" class="logo">SAGE <span>AI</span></a>
+      <div class="nav__links" id="navLinks">
+        <a href="#sobre">Sobre</a>
+        <a href="#como-funciona">Funcionamento</a>
+        <a href="#diferenciais">Diferenciais</a>
+        <a href="frontend/html/login.html" class="btn btn--ghost btn--sm">Entrar</a>
+        <a href="frontend/html/register.html" class="btn btn--primary btn--sm">Começar grátis</a>
+      </div>
+      <button class="nav__hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero__content">
+      <div class="badge reveal">Por estudantes, para estudantes</div>
+      <h1 class="hero__title reveal">Aprenda com uma <br />IA <span class="accent">especializada.</span></h1>
+      <p class="hero__sub reveal">A SAGE é uma tutora inteligente especializada em didática — para estudantes de qualquer idade ou lugar.</p>
+      <div class="hero__actions reveal">
+        <a href="frontend/html/chat.html" class="btn btn--primary">Usar sem conta</a>
+        <a href="frontend/html/register.html" class="btn btn--ghost">Cadastrar</a>
+        <a href="frontend/html/login.html" class="btn btn--ghost">Entrar</a>
+      </div>
+    </div>
+    <div class="hero__mockup reveal">
+      <div class="mockup">
+        <div class="mockup__bar">
+          <div class="mockup__dots"><span></span><span></span><span></span></div>
+          <div class="mockup__title">SAGE <span>AI</span></div>
+          <div class="mockup__status"><span class="status-dot"></span> online</div>
+        </div>
+        <div class="mockup__body" id="mockupBody"></div>
+        <div class="mockup__input">
+          <span class="mockup__placeholder">O que há para hoje?</span>
+          <div class="mockup__send"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="sobre">
+    <div class="section__inner">
+      <div class="tag reveal">Problemática</div>
+      <h2 class="section__title reveal">Conteúdo existe em todo lugar. <br><span class="accent">Orientação ideal</span>, só com Sage.</h2>
+      <p class="section__desc reveal">A dificuldade de muitos estudantes não decorre da ausência de material, mas sim da falta de orientação personalizada e de suporte contínuo.</p>
+      <div class="cards reveal">
+        <div class="card">
+          <div class="card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3DBA7A" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          </div>
+          <h3>Suporte contínuo</h3>
+          <p>Disponível a qualquer hora, sem depender meios externos</p>
+        </div>
+        <div class="card">
+          <div class="card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3DBA7A" stroke-width="1.8" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <h3>Aprendizado ativo</h3>
+          <p>Aprenda ativamente — teoria e prática, não somente leitura passiva.</p>
+        </div>
+        <div class="card">
+          <div class="card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3DBA7A" stroke-width="1.8" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <h3>Fontes confiáveis</h3>
+          <p>Conteúdo pedagógico curado, com mínima taxa de alucinações e imprecisões.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--dark" id="como-funciona">
+    <div class="section__inner">
+      <div class="tag reveal">Funcionamento</div>
+      <h2 class="section__title reveal">Três pilares. <span class="accent">Um ciclo.</span></h2>
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step__num">01</div>
+          <h3>Você pergunta</h3>
+          <p>Digite qualquer dúvida em linguagem natural, como em um bate-papo.</p>
+        </div>
+        <div class="step__arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3DBA7A" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+        <div class="step">
+          <div class="step__num">02</div>
+          <h3>SAGE explica</h3>
+          <p>A IA busca conteúdo validado via RAG e gera explicação no seu nível e ritmo.</p>
+        </div>
+        <div class="step__arrow"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3DBA7A" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+        <div class="step">
+          <div class="step__num">03</div>
+          <h3>Você pratica</h3>
+          <p>Exercícios gerados automaticamente reforçam o que foi aprendido.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="diferenciais">
+    <div class="section__inner">
+      <div class="tag reveal">Diferenciais</div>
+      <h2 class="section__title reveal">Não é apenas mais um <span class="accent">chatbot.</span></h2>
+      <div class="diff-grid reveal">
+        <div class="diff">
+          <div class="diff__label diff__label--bad">IA genérica</div>
+          <ul>
+            <li>Responde sem estrutura pedagógica</li>
+            <li>Pode alucinar fatos</li>
+            <li>Não acompanha seu progresso</li>
+            <li>Não gera exercícios de fixação</li>
+          </ul>
+        </div>
+        <div class="diff diff--highlight">
+          <div class="diff__label diff__label--good">SAGE AI</div>
+          <ul>
+            <li>Explicação → Prática → Reforço</li>
+            <li>Fontes educacionais curadas</li>
+            <li>Evolução personalizada por aluno</li>
+            <li>Exercícios automáticos por tópico</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--cta">
+    <div class="section__inner section__inner--center">
+      <h2 class="section__title reveal">Sua primeira aula começa <span class="accent">agora.</span></h2>
+      <p class="section__desc reveal">Sem cadastro obrigatório. Sinta-se à vontade.</p>
+      <div class="cta-actions reveal">
+        <a href="frontend/html/chat.html" class="btn btn--ghost">Usar sem conta</a>
+        <a href="frontend/html/register.html" class="btn btn--primary">Criar conta grátis</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer__inner">
+      <span class="logo">SAGE <span>AI</span></span>
+      <p>Specialized AI for General Education © 2026</p>
+      <p class="footer__sub">Projeto acadêmico pessoal — Todos os direitos reservados</p>
+    </div>
+  </footer>
+
+  <script src="frontend/js/global.js"></script>
+  <script src="frontend/js/landing.js"></script>
+</body>
+</html>
