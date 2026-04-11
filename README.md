@@ -1,11 +1,6 @@
-SAGE AI
-Assistente educacional com IA, desenvolvido de estudante para estudantes.
+SAGE AI (Specialized AI for General Education and Accessibility Integration)
 
-A SAGE AI foi projetado para ensinar com precisão e baixa taxa de erro. Utiliza RAG (Retrieval-Augmented Generation) para responder com base em conteúdo acadêmico real, sem inventar respostas.
+SAGE AI é um sistema de inteligência artificial projetado para orquestrar múltiplos modelos de IA, oferecendo experiências personalizadas de aprendizado e acessibilidade digital Ela atua como um núcleo inteligente capaz de interpretar requisições, analisar contexto e selecionar dinamicamente o melhor modelo ou combinação de modelos para cada situação, garantindo respostas mais precisas, eficientes e adaptadas ao usuário.
 
 
-Desenvolvido com:
-* Python
-* GPT-4
-* LangChain
-* ChromaDB
+Para cada dúvida, a melhor resposta possível.
