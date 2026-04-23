@@ -1,35 +1,44 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SAGE AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="frontend/css/global.css" />
   <link rel="stylesheet" href="frontend/css/landing.css" />
 </head>
+
 <body>
 
   <nav class="nav" id="nav">
     <div class="nav__inner">
-      <a href="index.html" class="logo">SAGE<span>AI</span></a>
+      <a href="index.html" class="logo">SAGE <span>AI</span></a>
       <div class="nav__links" id="navLinks">
         <a href="#sobre">Sobre</a>
         <a href="#funcionamento">Funcionamento</a>
         <a href="#diferenciais">Diferenciais</a>
-        <a href="frontend/html/login.html" class="btn btn--ghost btn--sm">Entrar</a>
-        <a href="frontend/html/register.html" class="btn btn--primary btn--sm">Criar conta</a>
+        <div class="nav__auth" id="navAuth">
+          <a href="frontend/html/login.html" class="btn btn--ghost btn--sm">Entrar</a>
+          <a href="frontend/html/register.html" class="btn btn--primary btn--sm">Criar conta</a>
+        </div>
       </div>
       <button class="theme-toggle" id="themeToggle" aria-label="Alternar modo claro/escuro">
         <span class="theme-toggle__track">
           <span class="theme-toggle__thumb">
-            <svg class="theme-toggle__icon theme-toggle__sun" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <svg class="theme-toggle__icon theme-toggle__sun" width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <circle cx="12" cy="12" r="4" />
-              <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+              <path
+                d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
             </svg>
-            <svg class="theme-toggle__icon theme-toggle__moon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <svg class="theme-toggle__icon theme-toggle__moon" width="11" height="11" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
             </svg>
           </span>
@@ -44,8 +53,9 @@
     <div class="hero__content">
       <div class="badge reveal">Por estudantes, para estudantes</div>
       <h1 class="hero__title reveal">Ensino ideal<br>Somente com<span class="accent"> SAGE AI</span></h1>
-      <p class="hero__sub reveal">A SAGE AI é um sistema de inteligência artificial projetado para orquestrar múltiplos modelos de IA, oferecendo experiências personalizadas de aprendizado e acessibilidade digital.</p>
-      <div class="hero__actions reveal">
+      <p class="hero__sub reveal">A SAGE AI é uma inteligência artificial projetado para orquestrar múltiplos modelos de
+        IA, oferecendo experiências de ensino adaptadas para você.</p>
+      <div class="hero__actions reveal" id="heroActions">
         <a href="frontend/html/app.html" class="btn btn--primary">Começar agora</a>
         <a href="frontend/html/register.html" class="btn btn--ghost">Cadastrar</a>
         <a href="frontend/html/login.html" class="btn btn--ghost">Entrar</a>
@@ -76,8 +86,10 @@
       <div class="sage-sobre__top reveal">
         <div class="tag">Problemática</div>
         <div class="sage-sobre__headline">
-          <h2 class="section__title">Conteúdo existe em todo lugar.<br><span class="accent">Orientação ideal, só com Sage.</span></h2>
-          <p class="sage-sobre__lead">A dificuldade de muitos estudantes não decorre da ausência de material, mas sim da falta de orientação adequada <e></e> suporte contínuo.</p>
+          <h2 class="section__title">Conteúdo existe em todo lugar.<br><span class="accent">Orientação ideal, só com
+              Sage.</span></h2>
+          <p class="sage-sobre__lead">A dificuldade de muitos estudantes não decorre da ausência de material, mas sim da
+            falta de orientação adequada <e></e> suporte contínuo.</p>
         </div>
       </div>
 
@@ -85,7 +97,10 @@
 
         <div class="sage-pillar">
           <div class="sage-pillar__icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
           </div>
           <div class="sage-pillar__body">
             <h3>Suporte contínuo</h3>
@@ -95,7 +110,10 @@
 
         <div class="sage-pillar">
           <div class="sage-pillar__icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
           </div>
           <div class="sage-pillar__body">
             <h3>Aprendizado ativo</h3>
@@ -105,7 +123,10 @@
 
         <div class="sage-pillar">
           <div class="sage-pillar__icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
           </div>
           <div class="sage-pillar__body">
             <h3>Fontes confiáveis</h3>
@@ -134,7 +155,10 @@
         <div class="func__card">
           <div class="func__card-num">01</div>
           <div class="func__card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+            </svg>
           </div>
           <h3>Você pergunta</h3>
           <p>Digite qualquer dúvida em linguagem natural, como em um bate-papo.</p>
@@ -143,7 +167,10 @@
 
         <!-- Seta -->
         <div class="func__arrow">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
         </div>
 
         <!-- Card 02 — destaque central -->
@@ -151,7 +178,12 @@
           <div class="func__card-glow"></div>
           <div class="func__card-num">02</div>
           <div class="func__card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
           </div>
           <h3>SAGE explica</h3>
           <p>A IA busca conteúdo validado via RAG e gera explicação no seu nível e ritmo.</p>
@@ -160,14 +192,21 @@
 
         <!-- Seta -->
         <div class="func__arrow">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
         </div>
 
         <!-- Card 03 -->
         <div class="func__card">
           <div class="func__card-num">03</div>
           <div class="func__card-icon">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
           </div>
           <h3>Você pratica</h3>
           <p>Exercícios gerados automaticamente reforçam o que foi aprendido.</p>
@@ -202,13 +241,20 @@
           <div class="sage-diffs__th sage-diffs__th--feature">Critério</div>
           <div class="sage-diffs__th sage-diffs__th--bad">
             <span class="diff__icon diff__icon--bad">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </span>
             IA genérica
           </div>
           <div class="sage-diffs__th sage-diffs__th--good">
             <span class="diff__icon diff__icon--good">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
             </span>
             SAGE AI
           </div>
@@ -248,9 +294,9 @@
   <section class="section section--cta">
     <div class="cta-grain"></div>
     <div class="section__inner section__inner--center">
-      <div class="cta-eyebrow reveal">Sua primeira aula começa agora.</div>
-      <h2 class="section__title reveal">Cadastro não é necessário</h2>
-      <div class="cta-actions reveal">
+      <div class="cta-eyebrow reveal" id="ctaEyebrow">Sua primeira aula começa agora.</div>
+      <h2 class="section__title reveal" id="ctaTitle">Cadastro não é necessário</h2>
+      <div class="cta-actions reveal" id="ctaActions">
         <a href="frontend/html/app.html" class="btn btn--primary">Usar sem conta</a>
         <a href="frontend/html/register.html" class="btn btn--ghost">Criar conta grátis</a>
       </div>
@@ -259,7 +305,7 @@
 
   <footer class="footer">
     <div class="footer__inner">
-      <span class="logo">SAGE<span>AI</span></span>
+      <span class="logo">SAGE <span>AI</span></span>
       <p>Specialized AI for General Education and Accessibility Integration © 2026</p>
       <p class="footer__sub">Projeto acadêmico pessoal — Todos os direitos reservados</p>
     </div>
@@ -268,4 +314,5 @@
   <script src="frontend/js/global.js"></script>
   <script src="frontend/js/landing.js"></script>
 </body>
+
 </html>
