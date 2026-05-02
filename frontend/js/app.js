@@ -1,107 +1,351 @@
-/* ================================
-   EQUALITY — app.js
-   Lógica e mocks do painel de ferramentas
-   ================================ */
+/* SAGE AI — app.js: chat, sidebar, perfil e interações */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    /* ================================
-     PLACEHOLDER ANIMADO (Simplificador)
-     Rotaciona exemplos no placeholder do textarea com efeito typewriter na aba "SAGE AI"
-     ================================ */
-  const SAGEAIchatInput = document.getElementById('SAGEAIchatInput');
-  if (SAGEAIchatInput) {
-    const examples = [
-      "Ex: \"Sage, qual a diferença entre 'muy' e 'mucho' em espanhol?\"",
-      "Ex: \"Sage, como eu centralizo uma div no CSS?\"",
-      "Ex: \"Sage, qual a fórmula de Bhaskara mesmo?\"",
-    ];
-    let extIdx = 0;
+  /* --- Sidebar: alterna guest vs user logado --- */
+  const sidebarGuest    = document.getElementById('sidebarGuest');
+  const sidebarUser     = document.getElementById('sidebarUser');
+  const sidebarBranding = document.getElementById('sidebarBranding');
 
-    function typeWriterEffect() {
-      /* Não sobrepõe o placeholder se o usuário já digitou algo */
-      if (SAGEAIchatInput.value.trim() !== '') return;
-      extIdx = (extIdx + 1) % examples.length;
-      const text = examples[extIdx];
-      let i = 0;
-      SAGEAIchatInput.setAttribute('placeholder', '');
+  async function updateSidebarAuth() {
+    const isLogged = Auth.isLoggedIn();
+    document.documentElement.setAttribute('data-auth', isLogged ? 'true' : 'false');
 
-      const interval = setInterval(() => {
-        if (SAGEAIchatInput.value.trim() !== '') { clearInterval(interval); return; }
-        SAGEAIchatInput.setAttribute('placeholder', text.substring(0, i + 1));
-        i++;
-        if (i === text.length) clearInterval(interval);
-      }, 35);
+    if (isLogged) {
+      let user = Auth.getUser();
+      const avatar   = document.getElementById('userAvatar');
+      const profileAvatar    = document.getElementById('profileAvatar');
+      const profileAvatarImg = document.getElementById('profileAvatarImg');
+
+      /* Busca dados atualizados do backend (inclui foto de perfil) */
+      try {
+        const freshUser = await Http.get('/auth/me');
+        if (freshUser) user = { ...user, ...freshUser };
+      } catch (e) { /* usa dados locais se falhar */ }
+
+      const name     = user?.displayName || user?.name || 'Usuário';
+      const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+      /* Preenche avatar com foto ou iniciais */
+      if (user?.profilePictureUrl) {
+        avatar.innerHTML = `<img src="${user.profilePictureUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        profileAvatarImg.src = user.profilePictureUrl;
+        profileAvatarImg.style.display = 'block';
+        profileAvatar.style.display = 'none';
+      } else {
+        avatar.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+        profileAvatarImg.style.display = 'none';
+        profileAvatar.style.display = 'flex';
+        profileAvatar.textContent = initials;
+      }
+
+      /* Preenche sidebar e modal */
+      document.getElementById('userNameDisplay').textContent = name.split(' ')[0];
+      document.getElementById('userEmailDisplay').textContent = user?.email || '';
+      document.getElementById('profileName').textContent = name;
+      const realNameEl = document.getElementById('profileRealName');
+      if (realNameEl) realNameEl.textContent = user?.name || '—';
+      document.getElementById('profileUsernameDisplay').textContent = '@' + (user?.username || 'usuario');
+      document.getElementById('profileEmail').textContent = user?.email || '—';
+      document.getElementById('profileJoined').textContent = new Date().toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
     }
-
-    setInterval(typeWriterEffect, 4000);
+    loadSidebarSessions();
   }
 
-  /* ================================
-     PLACEHOLDER ANIMADO (Simplificador)
-     Rotaciona exemplos no placeholder do textarea com efeito typewriter na aba "Sintetizador Neural"
-     ================================ */
-  const chatInput = document.getElementById('chatInput');
-  if (chatInput) {
-    const examples = [
-      "Ex: 'O preposto jurídico almejava deferimento na exordial...'",
-      "Ex: 'A exacerbação dos sintomas indica intervenção paliativa imediata...'",
-      "Ex: 'As diretrizes de compliance sinalizam heurísticas mandatórias...'",
-    ];
-    let extIdx = 0;
+  /* --- ChatService: abstrai API e guest localStorage --- */
+  const ChatService = {
+    async getSessions() {
+      if (Auth.isLoggedIn()) return await Http.get('/chat/sessions');
+      return JSON.parse(localStorage.getItem('sage_guest_sessions') || '[]');
+    },
 
-    function typeWriterEffect() {
-      /* Não sobrepõe o placeholder se o usuário já digitou algo */
-      if (chatInput.value.trim() !== '') return;
-      extIdx = (extIdx + 1) % examples.length;
-      const text = examples[extIdx];
-      let i = 0;
-      chatInput.setAttribute('placeholder', '');
+    async getMessages(sessionId) {
+      if (Auth.isLoggedIn()) return await Http.get(`/chat/sessions/${sessionId}/messages`);
+      const sessions = JSON.parse(localStorage.getItem('sage_guest_sessions') || '[]');
+      const session = sessions.find(s => s.id === sessionId);
+      return session ? session.messages : [];
+    },
 
-      const interval = setInterval(() => {
-        if (chatInput.value.trim() !== '') { clearInterval(interval); return; }
-        chatInput.setAttribute('placeholder', text.substring(0, i + 1));
-        i++;
-        if (i === text.length) clearInterval(interval);
-      }, 35);
+    async sendMessage(text, currentSessionId, imageBase64) {
+      const payload = { message: text, sessionId: currentSessionId };
+      if (imageBase64) payload.image = imageBase64;
+
+      const data = await Http.post(API.CHAT, payload);
+
+      /* Usuário logado: sessão gerenciada pelo backend */
+      if (Auth.isLoggedIn()) {
+        return { sessionId: data.sessionId, reply: data.reply, isNew: !currentSessionId && !!data.sessionId };
+      }
+
+      /* Guest: salva no localStorage */
+      let sessions = JSON.parse(localStorage.getItem('sage_guest_sessions') || '[]');
+      let isNew = false;
+      let sessionId = currentSessionId;
+
+      if (!sessionId) {
+        sessionId = 'guest_' + Date.now();
+        isNew = true;
+        sessions.unshift({
+          id: sessionId,
+          title: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
+          messages: []
+        });
+      }
+
+      const idx = sessions.findIndex(s => s.id === sessionId);
+      if (idx !== -1) {
+        sessions[idx].messages.push({ role: 'user', content: text });
+        sessions[idx].messages.push({ role: 'bot', content: data.reply });
+        localStorage.setItem('sage_guest_sessions', JSON.stringify(sessions));
+      }
+
+      return { sessionId, reply: data.reply, isNew };
     }
+  };
 
-    setInterval(typeWriterEffect, 4000);
+  /* --- Histórico: carrega sessões na sidebar --- */
+  let currentSessionId = null;
+  const chatHistoryList = document.getElementById('chatHistoryList');
+
+  async function loadSidebarSessions() {
+    if (!chatHistoryList) return;
+    try {
+      const sessions = await ChatService.getSessions();
+      chatHistoryList.innerHTML = '';
+
+      sessions.forEach(session => {
+        const btn = document.createElement('button');
+        btn.className = 'sidebar__link';
+        if (session.id === currentSessionId) btn.classList.add('active');
+        btn.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path></svg>
+          <span class="truncate">${session.title || 'Nova Conversa'}</span>
+        `;
+        btn.addEventListener('click', () => {
+          loadSessionMessages(session.id);
+          document.querySelectorAll('#chatHistoryList .sidebar__link').forEach(el => el.classList.remove('active'));
+          btn.classList.add('active');
+        });
+        chatHistoryList.appendChild(btn);
+      });
+
+      const profileConversations = document.getElementById('profileConversations');
+      if (profileConversations) profileConversations.textContent = sessions.length;
+    } catch (err) {
+      console.error("Erro ao carregar histórico", err);
+    }
   }
 
-  /* ================================
-     NOME DO USUÁRIO (sidebar)
-     Exibe o primeiro nome salvo localmente, ou "Usuário" como fallback
-     ================================ */
-  const userNameDisplay = document.getElementById('userNameDisplay');
-  if (userNameDisplay) {
-    const storedName = localStorage.getItem('eq_tempName');
-    userNameDisplay.textContent = storedName?.trim()
-      ? storedName.split(' ')[0]
-      : 'Usuário';
+  /* Carrega mensagens de uma sessão específica */
+  async function loadSessionMessages(sessionId) {
+    currentSessionId = sessionId;
+    const chatHistoryBox = document.getElementById('eqChatHistoryBox');
+    const chatEmpty      = document.getElementById('chatEmpty');
+
+    chatHistoryBox.querySelectorAll('.bot-msg, .user-msg, .typing-indicator').forEach(msg => msg.remove());
+
+    try {
+      const history = await ChatService.getMessages(sessionId);
+      if (history.length > 0) {
+        if (chatEmpty) chatEmpty.style.display = 'none';
+        history.forEach(msg => addMessage(msg.content, msg.role === 'user'));
+      } else {
+        if (chatEmpty) chatEmpty.style.display = 'flex';
+      }
+    } catch (err) {
+      console.error("Erro ao carregar mensagens da sessão", err);
+    }
   }
 
-  /* ================================
-     SIDEBAR — Mobile toggle + Desktop hover collapse
-     No desktop: recolhe por padrão, expande ao passar o mouse.
-     Ao clicar numa aba, mantém aberta por 5s antes de recolher.
-     No mobile: abre/fecha pelo botão hamburguer.
-     ================================ */
+  updateSidebarAuth();
+
+  /* --- Clique no avatar abre modal de perfil --- */
+  if (sidebarUser) {
+    sidebarUser.addEventListener('click', () => openModal());
+  }
+
+  /* --- Modal de perfil --- */
+  const profileModal = document.getElementById('profileModal');
+  const modalClose   = document.getElementById('modalClose');
+
+  function openModal()  { profileModal.classList.add('open'); }
+  function closeModal() { profileModal.classList.remove('open'); }
+
+  if (modalClose) modalClose.addEventListener('click', closeModal);
+  profileModal?.addEventListener('click', (e) => { if (e.target === profileModal) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  /* --- Edição de perfil --- */
+  const btnEditProfile        = document.getElementById('btnEditProfile');
+  const btnSaveProfile        = document.getElementById('btnSaveProfile');
+  const btnCancelEdit         = document.getElementById('btnCancelEdit');
+  const profileNameInput      = document.getElementById('profileNameInput');
+  const profileUsernameInput  = document.getElementById('profileUsernameInput');
+  const btnChoosePic          = document.getElementById('btnChoosePic');
+  const profilePicFileInput   = document.getElementById('profilePicFileInput');
+  const profileName           = document.getElementById('profileName');
+  const profileUsernameDisplay = document.getElementById('profileUsernameDisplay');
+  const profileEditMessage    = document.getElementById('profileEditMessage');
+  const profileAvatarImg      = document.getElementById('profileAvatarImg');
+  const profileAvatar         = document.getElementById('profileAvatar');
+
+  let newProfilePicBase64 = null;
+
+  /* Escolher foto de perfil */
+  if (btnChoosePic && profilePicFileInput) {
+    btnChoosePic.addEventListener('click', () => profilePicFileInput.click());
+
+    profilePicFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        /* Redimensiona a imagem para max 128x128 antes de salvar */
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX = 128;
+          let w = img.width, h = img.height;
+          if (w > h && w > MAX) { h *= MAX / w; w = MAX; }
+          else if (h > MAX) { w *= MAX / h; h = MAX; }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          newProfilePicBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          profileAvatarImg.src = newProfilePicBase64;
+          profileAvatarImg.style.display = 'block';
+          profileAvatar.style.display = 'none';
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* Botão editar: mostra campos de nome, username e foto */
+  if (btnEditProfile) {
+    btnEditProfile.addEventListener('click', () => {
+      const user = Auth.getUser();
+      if (!user) return;
+
+      btnEditProfile.style.display = 'none';
+      btnSaveProfile.style.display = 'inline-block';
+      btnCancelEdit.style.display = 'inline-block';
+      /* Mostra input de nome de exibição */
+      profileName.style.display = 'none';
+      profileNameInput.style.display = 'block';
+      profileNameInput.value = user.displayName || user.name || '';
+      /* Mostra input de username */
+      profileUsernameDisplay.style.display = 'none';
+      profileUsernameInput.style.display = 'block';
+      profileUsernameInput.value = user.username || '';
+      btnChoosePic.style.display = 'block';
+      newProfilePicBase64 = user.profilePictureUrl || null;
+      profileEditMessage.textContent = '';
+    });
+  }
+
+  /* Botão cancelar: restaura exibição normal */
+  if (btnCancelEdit) {
+    btnCancelEdit.addEventListener('click', () => {
+      btnEditProfile.style.display = 'inline-block';
+      btnSaveProfile.style.display = 'none';
+      btnCancelEdit.style.display = 'none';
+      /* Restaura nome */
+      profileName.style.display = 'block';
+      profileNameInput.style.display = 'none';
+      /* Restaura username */
+      profileUsernameDisplay.style.display = 'block';
+      profileUsernameInput.style.display = 'none';
+      btnChoosePic.style.display = 'none';
+      profilePicFileInput.value = '';
+      profileEditMessage.textContent = '';
+
+      const user = Auth.getUser();
+      if (user?.profilePictureUrl) {
+        profileAvatarImg.src = user.profilePictureUrl;
+        profileAvatarImg.style.display = 'block';
+        profileAvatar.style.display = 'none';
+      } else {
+        profileAvatarImg.style.display = 'none';
+        profileAvatar.style.display = 'flex';
+      }
+    });
+  }
+
+  /* Botão salvar perfil */
+  if (btnSaveProfile) {
+    btnSaveProfile.addEventListener('click', async () => {
+      btnSaveProfile.disabled = true;
+      profileEditMessage.style.color = 'var(--text-muted)';
+      profileEditMessage.textContent = 'Salvando...';
+
+      const payload = {
+        displayName: profileNameInput.value.trim(),
+        username: profileUsernameInput.value.trim()
+      };
+      if (newProfilePicBase64 !== null) {
+        payload.profilePictureUrl = newProfilePicBase64;
+      }
+
+      try {
+        const res = await fetch(API.BASE + '/user/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + Auth.getToken()
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Erro ao salvar perfil');
+
+        /* Atualiza cache local (sem foto, ela vem da API) */
+        const user = Auth.getUser();
+        if (data.displayName) user.displayName = data.displayName;
+        user.username = data.username;
+        user.profilePictureUrl = '';
+        const store = localStorage.getItem(Auth.TOKEN_KEY) ? localStorage : sessionStorage;
+        store.setItem(Auth.USER_KEY, JSON.stringify(user));
+
+        updateSidebarAuth();
+        btnCancelEdit.click();
+        profileEditMessage.style.color = 'var(--success, #28a745)';
+        profileEditMessage.textContent = 'Perfil atualizado com sucesso!';
+        setTimeout(() => { profileEditMessage.textContent = ''; }, 3000);
+      } catch (err) {
+        profileEditMessage.style.color = 'var(--danger)';
+        profileEditMessage.textContent = err.message;
+      } finally {
+        btnSaveProfile.disabled = false;
+      }
+    });
+  }
+
+  /* --- Logout --- */
+  const btnLogout   = document.getElementById('btnLogout');
+  const modalLogout = document.getElementById('modalLogout');
+
+  function logout() {
+    Auth.clear();
+    window.location.href = '../../index.html';
+  }
+
+  if (btnLogout)   btnLogout.addEventListener('click', logout);
+  if (modalLogout) modalLogout.addEventListener('click', logout);
+
+  /* --- Sidebar: mobile toggle + desktop hover collapse --- */
   const mobileBtn = document.getElementById('mobileMenuBtn');
   const sidebar   = document.getElementById('sidebar');
-  let tabSwitchTimeout;
 
-  /* Começa recolhida no desktop */
-  if (window.innerWidth > 768) {
-    sidebar.classList.add('collapsed');
-  }
+  if (window.innerWidth > 768) sidebar.classList.add('collapsed');
 
-  /* Expande ao passar o mouse (somente desktop) */
   sidebar.addEventListener('mouseenter', () => {
     if (window.innerWidth > 768) sidebar.classList.remove('collapsed');
   });
 
-  /* Recolhe ao tirar o mouse, a menos que esteja "travada aberta" */
   sidebar.addEventListener('mouseleave', () => {
     if (window.innerWidth > 768 && !sidebar.hasAttribute('data-hold-open')) {
       sidebar.classList.add('collapsed');
@@ -109,12 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   if (mobileBtn && sidebar) {
-    /* Abre/fecha a sidebar no mobile */
-    mobileBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-    });
+    mobileBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 
-    /* Fecha a sidebar mobile ao clicar fora dela */
     document.addEventListener('click', (e) => {
       if (
         window.innerWidth <= 768 &&
@@ -127,358 +367,274 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ================================
-     TAB NAVIGATION (SPA estática)
-     Alterna entre abas pelo atributo data-target dos botões da sidebar
-     ================================ */
-  const navItems = document.querySelectorAll('.nav-item');
-  const tabs     = document.querySelectorAll('.tab-content');
+  /* --- Chat: elementos principais --- */
+  const btnSendChat    = document.getElementById('btnEqSendChat');
+  const chatInput      = document.getElementById('SAGEAIchatInput');
+  const chatHistoryBox = document.getElementById('eqChatHistoryBox');
+  const chatEmpty      = document.getElementById('chatEmpty');
 
-  navItems.forEach(btn => {
-    btn.addEventListener('click', () => {
-      /* Remove estado ativo de todos os itens e abas */
-      navItems.forEach(n => n.classList.remove('active'));
-      tabs.forEach(t => t.classList.remove('active'));
+  /* --- Nova conversa --- */
+  const btnNewChat = document.getElementById('btnNewChat');
 
-      /* Ativa o item clicado e a aba correspondente */
-      btn.classList.add('active');
-      document.getElementById(btn.getAttribute('data-target')).classList.add('active');
+  if (btnNewChat) {
+    btnNewChat.addEventListener('click', () => {
+      currentSessionId = null;
+      document.querySelectorAll('#chatHistoryList .sidebar__link').forEach(el => el.classList.remove('active'));
+      chatHistoryBox.querySelectorAll('.bot-msg, .user-msg, .typing-indicator').forEach(msg => msg.remove());
+      if (chatEmpty) chatEmpty.style.display = 'flex';
+      if (chatInput) { chatInput.value = ''; chatInput.style.height = 'auto'; chatInput.focus(); }
+    });
+  }
 
-      /* Mobile: fecha a sidebar ao navegar */
-      if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
-        sidebar.classList.remove('open');
-      }
-
-      /* Desktop: mantém a sidebar aberta por 5s ao clicar numa aba */
-      if (window.innerWidth > 768) {
-        sidebar.classList.remove('collapsed');
-        sidebar.setAttribute('data-hold-open', 'true');
-
-        clearTimeout(tabSwitchTimeout);
-        tabSwitchTimeout = setTimeout(() => {
-          sidebar.removeAttribute('data-hold-open');
-          if (!sidebar.matches(':hover')) sidebar.classList.add('collapsed');
-        }, 5000);
-      }
+  /* --- Chips de sugestão --- */
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.getAttribute('data-prompt');
+      if (prompt && chatInput) { chatInput.value = prompt; chatInput.focus(); autoResize(); }
     });
   });
 
-  /* ================================
-     TAB 0: EQUALITY Copilot (chat central)
-     ================================ */
-  const btnEqSendChat      = document.getElementById('btnEqSendChat');
-  const eqChatInput        = document.getElementById('eqChatInput');
-  const eqChatHistoryBox   = document.getElementById('eqChatHistoryBox');
-  const btnEqAttach        = document.getElementById('btnEqAttach');
-  const btnEqPhoto         = document.getElementById('btnEqPhoto');
+  /* --- Auto-resize do textarea --- */
+  function autoResize() {
+    if (!chatInput) return;
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 160) + 'px';
+  }
 
-  /* Simula anexo de arquivo/foto prefixando o texto do input */
-  if (btnEqAttach) btnEqAttach.addEventListener('click', () => {
-    eqChatInput.value = '[Arquivo Anexado: relatorio.pdf] ' + eqChatInput.value;
-  });
-  if (btnEqPhoto) btnEqPhoto.addEventListener('click', () => {
-    eqChatInput.value = '[Mídia Anexada: camera_foto.jpg] ' + eqChatInput.value;
-  });
+  if (chatInput) chatInput.addEventListener('input', autoResize);
 
-  /* Cria e insere uma mensagem no histórico do chat central */
-  const addEqChatMsg = (text, isUser = false) => {
+  /* --- Adiciona mensagem ao chat --- */
+  const addMessage = (text, isUser = false) => {
+    if (chatEmpty) chatEmpty.style.display = 'none';
+
     const div = document.createElement('div');
     div.className = isUser ? 'user-msg' : 'bot-msg';
     div.innerHTML = `
       <span class="${isUser ? 'user-icon' : 'bot-icon'}">
         ${isUser
-          ? 'U'
-          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>'
+          ? (Auth.getUser()?.name?.[0]?.toUpperCase() || 'U')
+          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>'
         }
       </span>
-      <div class="bubble">${text}</div>
-    `;
-    eqChatHistoryBox.appendChild(div);
-    eqChatHistoryBox.scrollTop = eqChatHistoryBox.scrollHeight;
-  };
-
-  if (btnEqSendChat && eqChatInput) {
-    btnEqSendChat.addEventListener('click', () => {
-      const text = eqChatInput.value.trim();
-      if (!text) return;
-
-      addEqChatMsg(text, true);
-      eqChatInput.value = '';
-
-      /* Feedback visual de processamento */
-      const prevText = btnEqSendChat.textContent;
-      btnEqSendChat.textContent = 'Processando IA...';
-      btnEqSendChat.disabled = true;
-
-      /* Mock: resposta simulada com delay de 3.5s (copilot central é mais lento intencionalmente) */
-      setTimeout(() => {
-        btnEqSendChat.textContent = prevText;
-        btnEqSendChat.disabled = false;
-        addEqChatMsg(
-          `Esta é uma simulação da Inteligência Central EQUALITY. Roteamos sua solicitação por múltiplos módulos de IAs (análise livre, OCR, TTS Neural).<br><br>
-          🚨 <i>Nota do sistema: Funções centrais universais processam o contexto do zero, e por isso levam mais tempo. Se você já sabe que o problema é "somente dislexia" ou "somente visual", utilizar as ferramentas manuais diretas na barra ao lado economiza processamento e é muito mais rápido!</i>`
-        );
-      }, 3500);
-    });
-  }
-
-  /* ================================
-     TAB 1: Simplificador de Texto (chat)
-     ================================ */
-  const btnSendChat    = document.getElementById('btnSendChat');
-  const chatHistoryBox = document.getElementById('chatHistoryBox');
-
-  /* Cria e insere uma mensagem no histórico do simplificador */
-  const addChatMsg = (text, isUser = false) => {
-    const div = document.createElement('div');
-    div.className = isUser ? 'user-msg' : 'bot-msg';
-    div.innerHTML = `
-      <span class="${isUser ? 'user-icon' : 'bot-icon'}">${isUser ? 'U' : 'E'}</span>
       <div class="bubble">${text}</div>
     `;
     chatHistoryBox.appendChild(div);
     chatHistoryBox.scrollTop = chatHistoryBox.scrollHeight;
   };
 
-  if (btnSendChat && chatInput) {
-    btnSendChat.addEventListener('click', () => {
-      const text = chatInput.value.trim();
-      if (!text) return;
-
-      addChatMsg(text, true);
-      chatInput.value = '';
-
-      /* Feedback visual de processamento */
-      const prevText = btnSendChat.textContent;
-      btnSendChat.textContent = 'Pensando...';
-      btnSendChat.disabled = true;
-
-      /* Mock: resposta simulada com delay de 1.5s */
-      setTimeout(() => {
-        btnSendChat.textContent = prevText;
-        btnSendChat.disabled = false;
-        addChatMsg(
-          `Esta é uma simulação de processamento de IA. O sistema reescreveria seu texto removendo jargões,
-          dividindo parágrafos longos em tópicos diretos e ajustando a cadência verbal para acessibilidade cognitiva Nível AAA.
-          <br><br><i>No fluxo real, aqui retornaremos o JSON de resposta da Groq API.</i>`
-        );
-      }, 1500);
-    });
+  /* --- Indicador de digitação --- */
+  function showTyping() {
+    const el = document.createElement('div');
+    el.className = 'typing-indicator';
+    el.id = 'typingIndicator';
+    el.innerHTML = `
+      <span class="bot-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+      </span>
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    `;
+    chatHistoryBox.appendChild(el);
+    chatHistoryBox.scrollTop = chatHistoryBox.scrollHeight;
   }
 
-  /* ================================
-     TAB 2: Áudio — Transcrição de Microfone (mock)
-     ================================ */
-  const btnRecord = document.getElementById('btnRecord');
-  if (btnRecord) {
-    btnRecord.addEventListener('click', () => {
-      if (btnRecord.classList.contains('recording')) {
-        /* Para a "gravação" e exibe transcrição simulada */
-        btnRecord.classList.remove('recording');
-        btnRecord.innerHTML = `
-          <span class="pulse-ring"></span>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          </svg>
-          Gravar Microfone
-        `;
-
-        /* Substitui o painel placeholder pela transcrição simulada */
-        const textPanel = document.querySelector('#tab-audio .text-panel');
-        textPanel.classList.remove('placeholder');
-        textPanel.innerHTML = `
-          <h3 style="margin-bottom: 12px; font-size: 15px; color: var(--white);">Anotações e Transcrição</h3>
-          <p style="color: var(--muted); font-size: 14px; line-height: 1.6;">
-            <strong>[00:00:00]</strong>: Simulação concluída. Você encerrou a captura de áudio local.<br><br>
-            A plataforma Equality enviará posteriormente via WebSocket buffers de áudio curtos para nosso endpoint,
-            traduzindo ruídos e falas velozes em texto estruturado formatado com resumos dinâmicos de contexto na tela.
-          </p>
-        `;
-      } else {
-        /* Inicia a "gravação" */
-        btnRecord.classList.add('recording');
-        btnRecord.innerHTML = `
-          <span class="pulse-ring"></span>
-          Simulando Captação... (Clique para Salvar)
-        `;
-      }
-    });
+  function hideTyping() {
+    document.getElementById('typingIndicator')?.remove();
   }
 
-  /* ================================
-     TAB 4: Libras — Sintetizador de Sinais (mock)
-     ================================ */
-  const btnTranslateLibras = document.getElementById('btnTranslateLibras');
-  const librasInput        = document.getElementById('librasInput');
-  const avatarBox          = document.querySelector('.avatar-connecting');
+  /* --- Enviar mensagem --- */
+  let currentImageBase64 = null;
 
-  if (btnTranslateLibras && librasInput && avatarBox) {
-    btnTranslateLibras.addEventListener('click', () => {
-      if (!librasInput.value.trim()) return;
+  async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text && !currentImageBase64) return;
 
-      btnTranslateLibras.disabled = true;
-      btnTranslateLibras.textContent = 'Processando NLP...';
+    const displayMessage = text || "Anexo enviado";
+    addMessage(displayMessage, true);
 
-      /* Exibe spinner de carregamento do avatar */
-      avatarBox.innerHTML = `
-        <div class="avatar-spinner"></div>
-        <p>Interpretando Glosas de Libras...</p>
-      `;
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
 
-      /* Mock: exibe avatar pronto após 2s */
-      setTimeout(() => {
-        btnTranslateLibras.textContent = 'Sintetizar Sinais';
-        btnTranslateLibras.disabled = false;
-        avatarBox.innerHTML = `
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-          </svg>
-          <p style="color: var(--white); font-weight: 500;">Interface 3D Pronta.</p>
-          <p style="font-size: 12px; max-width: 250px; text-align: center; margin-top: 10px; opacity: 0.7;">
-            (Simulação de API) Avatar sinalizará estruturação de linguagem espacial traduzida a partir de português neutro.
-          </p>
-        `;
-      }, 2000);
-    });
-  }
+    const imageToSend = currentImageBase64;
+    currentImageBase64 = null;
+    document.getElementById('chatInputPreview').style.display = 'none';
+    document.getElementById('chatInputPreview').innerHTML = '';
 
-  /* ================================
-     TAB 5: Sintetizador Neural TTS (mock)
-     ================================ */
-  const btnPlayTTS = document.getElementById('btnPlayTTS');
-  const ttsWave   = document.getElementById('ttsWave');
-  const ttsStatus = document.getElementById('ttsStatus');
+    showTyping();
+    btnSendChat.disabled = true;
 
-  if (btnPlayTTS) {
-    btnPlayTTS.addEventListener('click', () => {
-      /* Feedback visual de geração de áudio */
-      btnPlayTTS.innerHTML = `<div class="avatar-spinner" style="width: 20px; height: 20px;"></div>`;
-      ttsStatus.textContent = 'Codificando emoção e inflexão a partir do processamento neural...';
+    try {
+      const data = await ChatService.sendMessage(text, currentSessionId, imageToSend);
+      hideTyping();
+      btnSendChat.disabled = false;
+      addMessage(data.reply);
 
-      /* Mock: exibe controles de reprodução após 1.5s */
-      setTimeout(() => {
-        btnPlayTTS.innerHTML = `
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <rect x="6" y="4" width="4" height="16"></rect>
-            <rect x="14" y="4" width="4" height="16"></rect>
-          </svg>
-        `;
-        ttsWave.style.display = 'block';
-        ttsStatus.textContent = 'Áudio gerado. Reproduzindo [00:00:00 / 00:02:14]';
-      }, 1500);
-    });
-  }
-
-  /* ================================
-     TAB 6: Laboratório Anti-Dislexia
-     Modo Biônico: realça alternadamente letras para facilitar leitura focal
-     Régua Dinâmica: linha guia que segue o cursor do mouse
-     ================================ */
-  const btnBionic  = document.getElementById('btnBionicMode');
-  const btnRuler   = document.getElementById('btnRulerMode');
-  const txtContent = document.getElementById('dyslexiaTextContent');
-  const ruler      = document.getElementById('dyslexiaRuler');
-
-  if (btnBionic) {
-    let bionic     = false;
-    let isRulerOn  = false;
-
-    /* Alterna o modo de leitura biônica */
-    btnBionic.addEventListener('click', () => {
-      bionic = !bionic;
-      btnBionic.textContent = bionic ? 'Desativar Bionic' : 'Espaçamento Biônico';
-
-      if (bionic) {
-        /* Texto com realce biônico alternado e espaçamento aumentado */
-        txtContent.innerHTML = '<strong>O</strong> qu<strong>e</strong> <strong>é</strong> Le<strong>i</strong>tu<strong>r</strong>a Fo<strong>c</strong>a<strong>l</strong>?<br><br> Es<strong>t</strong>e s<strong>i</strong>st<strong>e</strong>m<strong>a</strong> a<strong>p</strong>l<strong>i</strong>ca e<strong>s</strong>p<strong>a</strong>ç<strong>a</strong>m<strong>e</strong>ntos r<strong>í</strong>g<strong>i</strong>d<strong>o</strong>s r<strong>e</strong>c<strong>o</strong>m<strong>e</strong>n<strong>d</strong>ad<strong>o</strong>s p<strong>o</strong>r t<strong>e</strong>r<strong>a</strong>p<strong>e</strong>ut<strong>a</strong>s v<strong>i</strong>sua<strong>i</strong>s ga<strong>r</strong>a<strong>n</strong>t<strong>i</strong>ndo q<strong>u</strong>e pe<strong>s</strong>s<strong>o</strong>a<strong>s</strong> c<strong>o</strong>m D<strong>é</strong>fic<strong>i</strong>t de A<strong>t</strong>e<strong>n</strong>ç<strong>ã</strong>o e D<strong>i</strong>s<strong>l</strong>e<strong>x</strong>ia m<strong>a</strong>nt<strong>e</strong>n<strong>h</strong>am a re<strong>t</strong>e<strong>n</strong>ç<strong>ã</strong>o m<strong>á</strong>x<strong>i</strong>m<strong>a</strong> de te<strong>x</strong>t<strong>o</strong>, s<strong>e</strong>m "p<strong>u</strong>lar l<strong>i</strong>n<strong>h</strong>as" po<strong>r</strong> e<strong>n</strong>g<strong>a</strong>no.';
-        txtContent.style.letterSpacing = '1px';
-      } else {
-        /* Texto normal sem realce */
-        txtContent.innerHTML = '<strong>O que é Leitura Focal?</strong><br><br> Este sistema aplica espaçamentos rígidos recomendados por terapeutas visuais garantindo que pessoas com Déficit de Atenção e Dislexia mantenham a retenção máxima de texto, sem "pular linhas" por engano.';
-        txtContent.style.letterSpacing = 'normal';
-      }
-    });
-
-    /* Alterna a régua dinâmica */
-    btnRuler.addEventListener('click', () => {
-      isRulerOn = !isRulerOn;
-      btnRuler.textContent = isRulerOn ? 'Desativar Régua' : 'Régua Dinâmica';
-      ruler.style.display  = isRulerOn ? 'block' : 'none';
-    });
-
-    /* Move a régua acompanhando o mouse, travada dentro dos limites da zona de leitura */
-    const readZone = document.getElementById('dyslexiaReadZone');
-    if (readZone) {
-      readZone.addEventListener('mousemove', (e) => {
-        if (!isRulerOn) return;
-        const rect = readZone.getBoundingClientRect();
-        let y = e.clientY - rect.top;
-        /* Clamp: impede a régua de vazar as bordas da zona */
-        y = Math.max(20, Math.min(y, rect.height - 20));
-        ruler.style.top = `${y - 20}px`;
-      });
+      if (data.isNew) currentSessionId = data.sessionId;
+      loadSidebarSessions();
+    } catch (err) {
+      hideTyping();
+      btnSendChat.disabled = false;
+      addMessage(`⚠️ <i>Erro ao conectar com a SAGE AI: ${err.message || 'Servidor indisponível'}. Verifique se o backend está rodando.</i>`);
     }
   }
 
-  /* ================================
-     TAB 7: Auditor WCAG (mock)
-     ================================ */
-  const btnAudit      = document.getElementById('btnAuditWCAG');
-  const wcagScore     = document.getElementById('wcagScore');
-  const wcagItems     = document.getElementById('wcagItems');
-  const wcagReportTxt = document.getElementById('wcagReportTxt');
-
-  if (btnAudit) {
-    btnAudit.addEventListener('click', () => {
-      btnAudit.disabled = true;
-      btnAudit.textContent = 'Auditando Pixel a Pixel...';
-      wcagScore.textContent = '...';
-
-      /* Mock: exibe relatório após 2s */
-      setTimeout(() => {
-        wcagScore.textContent = '94';
-        wcagScore.style.color = 'var(--green)';
-        wcagReportTxt.textContent = 'Relatório Concluído! Achamos 1 problema de contraste, mas o restante está acessível.';
-
-        wcagItems.style.display = 'block';
-        wcagItems.innerHTML = `
-          <div class="wcag-item"><strong>Alt-Text Gerado:</strong> "Homem sorrindo com cachorro labrador amarelo em gramado verde"</div>
-          <div class="wcag-item" style="border-left-color: var(--danger)"><strong>Aviso (Contraste):</strong> Texto da logo na foto não atinge 4.5:1 ratio.</div>
-          <div class="wcag-item"><strong>Layout:</strong> Hierarquia aprovada.</div>
-        `;
-
-        btnAudit.textContent = 'Auditoria Finalizada';
-        btnAudit.classList.replace('btn--primary', 'btn--ghost');
-      }, 2000);
+  if (btnSendChat && chatInput) {
+    btnSendChat.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
   }
 
-  /* ================================
-     TAB 8: Motor Facial — controle por olhos (mock)
-     ================================ */
-  const btnMotor   = document.getElementById('btnMotorCalibrate');
-  const motorLabel = document.getElementById('motorLabel');
-  const motorCam   = document.getElementById('motorCamBox');
+  /* --- Placeholder animado --- */
+  if (chatInput) {
+    const examples = [
+      "Envie uma mensagem para SAGE AI...",
+      "Ex: \"Sage, qual a diferença entre 'muy' e 'mucho'?\"",
+      "Ex: \"Sage, como centralizo uma div no CSS?\"",
+      "Ex: \"Sage, qual a fórmula de Bhaskara?\"",
+    ];
+    let extIdx = 0;
 
-  if (btnMotor) {
-    btnMotor.addEventListener('click', () => {
-      btnMotor.textContent = 'Iniciando Calibração...';
+    function typeWriterEffect() {
+      if (chatInput.value.trim() !== '') return;
+      extIdx = (extIdx + 1) % examples.length;
+      const text = examples[extIdx];
+      let i = 0;
+      chatInput.setAttribute('placeholder', '');
 
-      setTimeout(() => {
-        motorCam.style.background = '#1a1a1a';
-        motorLabel.textContent    = 'Detecção Facial LIGADA. Identificando Ponto de Foco...';
-        motorLabel.style.color    = 'var(--green)';
+      const interval = setInterval(() => {
+        if (chatInput.value.trim() !== '') { clearInterval(interval); return; }
+        chatInput.setAttribute('placeholder', text.substring(0, i + 1));
+        i++;
+        if (i === text.length) clearInterval(interval);
+      }, 30);
+    }
 
-        setTimeout(() => {
-          btnMotor.textContent    = 'Calibrado com Sucesso.';
-          btnMotor.disabled       = true;
-          motorLabel.textContent  = 'Controlando cursor pelos olhos. Pisque duas vezes para clicar.';
-        }, 3000);
-      }, 1000);
+    setTimeout(typeWriterEffect, 2000);
+    setInterval(typeWriterEffect, 6000);
+  }
+
+  /* --- Anexo de imagem --- */
+  const btnAttachment    = document.getElementById('btnAttachment');
+  const btnMicrophone    = document.getElementById('btnMicrophone');
+  const fileAttachment   = document.getElementById('fileAttachment');
+  const chatInputPreview = document.getElementById('chatInputPreview');
+
+  if (btnAttachment && fileAttachment) {
+    btnAttachment.addEventListener('click', () => fileAttachment.click());
+
+    fileAttachment.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          /* Redimensiona para max 1024px */
+          const canvas = document.createElement('canvas');
+          let width = img.width, height = img.height;
+          const MAX_SIZE = 1024;
+          if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+          else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          currentImageBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+          chatInputPreview.style.display = 'flex';
+          chatInputPreview.innerHTML = `
+            <img src="${currentImageBase64}" alt="Anexo">
+            <span class="preview-text">${file.name}</span>
+            <button class="preview-close" title="Remover anexo">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          `;
+          chatInputPreview.querySelector('.preview-close').addEventListener('click', () => {
+            fileAttachment.value = '';
+            currentImageBase64 = null;
+            chatInputPreview.style.display = 'none';
+            chatInputPreview.innerHTML = '';
+          });
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* --- Gravação de áudio --- */
+  let mediaRecorder;
+  let audioChunks = [];
+  let isRecording = false;
+
+  if (btnMicrophone) {
+    btnMicrophone.addEventListener('click', async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+            chatInputPreview.style.display = 'flex';
+            chatInputPreview.innerHTML = `
+              <div class="recording-pulse" style="background:var(--green);animation:none;"></div>
+              <span class="preview-text" style="color:var(--green);">Processando áudio (Groq Whisper)...</span>
+            `;
+            chatInput.value = "Processando áudio...";
+            chatInput.disabled = true;
+
+            try {
+              const formData = new FormData();
+              formData.append('file', audioBlob, 'audio.webm');
+
+              const res = await fetch(API.BASE + '/chat/audio', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + (Auth.getToken() || '') },
+                body: formData
+              });
+
+              if (!res.ok) throw new Error('Falha na transcrição');
+              const data = await res.json();
+
+              chatInput.value = data.text;
+              chatInput.disabled = false;
+              chatInputPreview.style.display = 'none';
+            } catch (err) {
+              console.error(err);
+              chatInput.disabled = false;
+              chatInput.value = "";
+              chatInputPreview.innerHTML = `
+                <span class="preview-text" style="color:var(--danger);">Erro ao transcrever áudio.</span>
+                <button class="preview-close" title="Remover"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+              `;
+              chatInputPreview.querySelector('.preview-close').addEventListener('click', () => {
+                chatInputPreview.style.display = 'none';
+              });
+            }
+          };
+
+          mediaRecorder.start();
+          isRecording = true;
+          btnMicrophone.classList.add('btn-recording');
+
+          chatInputPreview.style.display = 'flex';
+          chatInputPreview.innerHTML = `
+            <div class="recording-pulse"></div>
+            <span class="preview-text" style="color:var(--danger);">Gravando áudio...</span>
+          `;
+        } catch (err) {
+          alert('Erro ao acessar o microfone: ' + err.message);
+        }
+      } else {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        isRecording = false;
+        btnMicrophone.classList.remove('btn-recording');
+      }
     });
   }
 

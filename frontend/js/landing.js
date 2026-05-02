@@ -1,33 +1,28 @@
-/* ================================
-   EQUALITY — landing.js
-   ================================ */
+/* SAGE AI — landing.js: mockup chat e atualização de CTAs */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* Inicializa animações de reveal por scroll e comportamento da navbar */
+  /* Inicia reveal e nav */
   initReveal();
   initNav();
 
-  /* ================================
-     MOCK CHAT ROTATION
-     Rotaciona cenários de conversa no mockup da landing com animação de entrada
-     ================================ */
+  /* --- Cenários do mockup de chat --- */
   const chatScenarios = [
     [
-      { type: 'user', text: 'Esse texto tá muito confuso...<br><br>"O preposto almejava deferimento na exordial".' },
-      { type: 'sage', text: 'Claro! Que tal:<br><br>"O representante da empresa pediu aprovação no início do processo."' },
+      { type: 'user', text: 'Sage, me explica o que é fotossíntese de um jeito simples?' },
+      { type: 'sage', text: 'Claro! É o processo que as plantas usam para <b>transformar luz do sol em energia</b>.<br><br>Elas absorvem CO₂ e água, e devolvem oxigênio para nós. 🌱' },
     ],
     [
-      { type: 'user', text: 'Pode verificar o dashboard que criei pras métricas?' },
-      { type: 'sage', text: 'Analisando...<br><br>Atenção: A paleta falhou no Contraste Nível AA.<br>Alt-Text sugerido: "Gráfico de barras indicando alta produtividade".' },
+      { type: 'user', text: 'Qual a diferença entre "there", "their" e "they\'re"?' },
+      { type: 'sage', text: '<b>there</b> = lugar ("over there")<br><b>their</b> = posse ("their house")<br><b>they\'re</b> = they are ("they\'re cool")<br><br>Dica: substitua por "they are" — se fizer sentido, é <b>they\'re</b>!' },
     ],
     [
-      { type: 'user', text: 'Preciso transcrever parte de uma reunião técnica agora.' },
-      { type: 'sage', text: 'Áudio vinculado ao microfone!<br><br>Sintetizando modelo visual 3D em <b>Libras</b> e transcrevendo destaques de áudio em tempo real.' },
+      { type: 'user', text: 'Me ajuda a entender porcentagem? Tipo, 30% de 200.' },
+      { type: 'sage', text: 'Fácil! Basta multiplicar:<br><br><b>200 × 0,30 = 60</b><br><br>Então 30% de 200 é <b>60</b>. A dica é dividir a % por 100 e multiplicar. 📊' },
     ],
   ];
 
-  /* Renderiza um cenário no mockup com delay escalonado entre as mensagens */
+  /* Renderiza cenário com delay escalonado */
   function runScenario(scenarioIndex) {
     const body = document.getElementById('mockupBody');
     if (!body) return;
@@ -41,8 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
         el.className = `msg msg--${msg.type}`;
         el.innerHTML = `${msg.text}<span class="msg__time">${now()}</span>`;
         body.appendChild(el);
-
-        /* Força reflow antes de adicionar .visible para garantir a transição CSS */
         requestAnimationFrame(() => el.classList.add('visible'));
         body.scrollTop = body.scrollHeight;
       }, 600 + i * 2200);
@@ -52,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currScenario = 0;
   runScenario(currScenario);
 
-  /* A cada 8s faz fade out das mensagens atuais e carrega o próximo cenário */
+  /* Rotaciona cenários a cada 8s */
   setInterval(() => {
     const body = document.getElementById('mockupBody');
     if (!body) return;
@@ -64,5 +57,27 @@ document.addEventListener('DOMContentLoaded', () => {
       runScenario(currScenario);
     }, 400);
   }, 8000);
+
+  /* --- Atualiza CTAs se o usuário já estiver logado --- */
+  if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+    const navAuth = document.getElementById('navAuth');
+    if (navAuth) {
+      navAuth.innerHTML = '<a href="frontend/html/app.html" class="btn btn--primary btn--sm">SAGE AI</a>';
+    }
+
+    const heroActions = document.getElementById('heroActions');
+    if (heroActions) {
+      heroActions.innerHTML = '<a href="frontend/html/app.html" class="btn btn--primary">Aprenda agora com a SAGE AI</a>';
+    }
+
+    const ctaEyebrow = document.getElementById('ctaEyebrow');
+    if (ctaEyebrow) ctaEyebrow.innerHTML = 'Sua próxima aula começa agora.';
+
+    const ctaTitle = document.getElementById('ctaTitle');
+    if (ctaTitle) ctaTitle.innerHTML = 'Pronto para seguir em diante?';
+
+    const ctaActions = document.getElementById('ctaActions');
+    if (ctaActions) ctaActions.innerHTML = '<a href="frontend/html/app.html" class="btn btn--primary">Continuar agora</a>';
+  }
 
 });

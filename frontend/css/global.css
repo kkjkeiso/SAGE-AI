@@ -1,5 +1,5 @@
 /* ================================
-   EQUALITY — global.css
+   SAGE AI — global.css
    Variáveis, reset e componentes compartilhados
    ================================ */
 
@@ -11,14 +11,10 @@
   --border: #242424;
   --green: #3DBA7A;
   --green-dim: rgba(61, 186, 122, .08);
-  --green-mid: #3DBA7A;
   --white: #F5F5F5;
   --muted: #666;
   --danger: #e05252;
   --warning: #d4a017;
-
-  /* Para texto em amarelo sobre fundo claro */
-  --green-text: #3DBA7A;
 
   --radius-sm: 8px;
   --radius-md: 14px;
@@ -39,14 +35,10 @@
   --bg3: #F0F8F4;
   --border: #D6EDE3;
   --green: #2FA068;
-  /* verde mais escuro para contraste no fundo claro */
   --green-dim: rgba(61, 186, 122, .10);
-  --green-mid: #2FA068;
   --white: #0D0D0D;
-  /* texto principal = preto */
   --muted: #4a5a52;
   --danger: #c63030;
-  --green-text: #2FA068;
 }
 
 /* Accent text = verde escuro */
@@ -229,8 +221,12 @@ body {
   white-space: nowrap;
 }
 
+.btn:hover {
+  transform: translateY(-1px);
+}
+
 .btn:active {
-  transform: scale(.97);
+  transform: scale(.97) translateY(0);
 }
 
 .btn--primary {
@@ -254,8 +250,8 @@ body {
 }
 
 [data-theme="light"] .btn--ghost:hover {
-  color: var(--green-text);
-  border-color: var(--green-text);
+  color: var(--green);
+  border-color: var(--green);
 }
 
 .btn--sm {

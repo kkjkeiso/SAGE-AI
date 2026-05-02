@@ -5,3 +5,13 @@ SAGE AI é um sistema de inteligência artificial projetado para orquestrar múl
 
 
 Para cada dúvida, a melhor resposta para você.
+
+## Executando o Projeto
+
+Antes de iniciar o backend, certifique-se de configurar a sua chave da API da Groq:
+
+```bash
+export GROQ_API_KEY="sua_chave_aqui"
+```
+
+Depois, você pode iniciar o servidor backend e abrir o frontend normalmente.

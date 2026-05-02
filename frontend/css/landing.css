@@ -1,5 +1,5 @@
 /* ================================
-   EQUALITY — landing.css
+   SAGE AI — landing.css
    ================================ */
 
 /* ---- NAV ---- */
@@ -38,6 +38,12 @@
   align-items: center;
   gap: 24px;
   margin-left: auto;
+.nav__auth {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
 }
 
 .nav__links a:not(.btn) {
@@ -2200,7 +2206,7 @@
 
 .func__cycle {
   display: grid;
-  grid-template-columns: 1fr 40px 1.3fr 40px 1fr;
+  grid-template-columns: 1fr 40px 1fr 40px 1fr;
   gap: 0;
   align-items: center;
 }
@@ -2213,7 +2219,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 280px;
+  min-height: 320px;
   position: relative;
   overflow: hidden;
   transition: border-color .25s, background .25s;
@@ -2227,7 +2233,6 @@
 
 /* Card central — destaque */
 .func__card--center {
-  min-height: 320px;
   border-color: rgba(61, 186, 122, .35);
   background: rgba(61, 186, 122, .05);
 }

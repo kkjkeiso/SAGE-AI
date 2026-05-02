@@ -1,12 +1,6 @@
-/* ================================
-   EQUALITY — global.js
-   Auth state, config da API e utilitários compartilhados
-   ================================ */
+/* SAGE AI — global.js: API config, auth, HTTP e utilitários */
 
-/* ================================
-   CONFIG DA API
-   Trocar BASE pela URL real do back-end quando disponível
-   ================================ */
+/* --- API endpoints --- */
 const API = {
   BASE:     'http://localhost:3000/api',
   LOGIN:    '/auth/login',
@@ -17,67 +11,53 @@ const API = {
   HISTORY:  '/chat/history',
 };
 
-/* ================================
-   AUTH
-   Gerencia token e dados do usuário via localStorage/sessionStorage
-   ================================ */
+/* --- Auth: gerencia token e dados do usuário --- */
 const Auth = {
   TOKEN_KEY: 'sage_token',
   USER_KEY:  'sage_user',
 
-  /* Retorna o token salvo, independente do storage utilizado */
+  /* Retorna token salvo */
   getToken() {
     return localStorage.getItem(this.TOKEN_KEY)
-        || sessionStorage.getItem(this.TOKEN_KEY);
+        || sessionStorage.getItem(this.TOKEN_KEY)
+        || null;
   },
 
-  /* Retorna o objeto do usuário salvo, ou null se inválido */
+  /* Retorna objeto do usuário */
   getUser() {
     const raw = localStorage.getItem(this.USER_KEY)
              || sessionStorage.getItem(this.USER_KEY);
     try { return raw ? JSON.parse(raw) : null; } catch { return null; }
   },
 
-  /* Retorna true se houver um token ativo */
+  /* Verifica se há token ativo */
   isLoggedIn() {
     return !!this.getToken();
   },
 
-  /* Persiste token e usuário. Se remember=true usa localStorage (permanente) */
+  /* Salva token e usuário (sem foto — ela vem da API sob demanda) */
   save(token, user, remember = false) {
+    this.clear();
     const store = remember ? localStorage : sessionStorage;
     store.setItem(this.TOKEN_KEY, token);
-    store.setItem(this.USER_KEY, JSON.stringify(user));
+    /* Remove foto base64 para não estourar quota do storage */
+    const slim = { ...user, profilePictureUrl: '' };
+    store.setItem(this.USER_KEY, JSON.stringify(slim));
   },
 
-  /* Remove token e usuário de ambos os storages */
+  /* Limpa token e usuário */
   clear() {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     sessionStorage.removeItem(this.TOKEN_KEY);
     sessionStorage.removeItem(this.USER_KEY);
   },
-
-  /* Redireciona para o chat se o usuário já estiver logado (usar no topo de login/register) */
-  redirectIfLoggedIn() {
-    if (this.isLoggedIn()) window.location.href = 'chat.html';
-  },
-
-  /* Redireciona para login se o usuário não estiver logado (opcional — permite guest) */
-  redirectIfGuest(to = '../html/login.html') {
-    if (!this.isLoggedIn()) window.location.href = to;
-  },
 };
 
-/* ================================
-   HTTP
-   Wrapper de fetch com injeção automática de token e tratamento de erros
-   ================================ */
+/* --- HTTP: fetch wrapper com token automático --- */
 const Http = {
   async request(method, path, body = null) {
     const headers = { 'Content-Type': 'application/json' };
-
-    /* Injeta token de autorização se disponível */
     const token = Auth.getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -87,9 +67,17 @@ const Http = {
       body: body ? JSON.stringify(body) : null,
     });
 
-    /* Tenta parsear JSON; se falhar retorna objeto vazio */
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.message || 'Erro desconhecido');
+
+    /* Redireciona ao login se o token expirou */
+    if (!res.ok) {
+      if (res.status === 401) {
+        Auth.clear();
+        window.location.href = 'login.html';
+        return;
+      }
+      throw new Error(data.message || 'Erro desconhecido');
+    }
     return data;
   },
 
@@ -99,25 +87,19 @@ const Http = {
   del(path)        { return this.request('DELETE', path); },
 };
 
-/* ================================
-   UTILITÁRIOS
-   ================================ */
+/* --- Utilitários --- */
 
-/* Retorna horário atual formatado como HH:MM */
+/* Horário atual HH:MM */
 function now() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-/* ================================
-   REVEAL (animação de entrada por scroll)
-   Observa elementos com .reveal e adiciona .visible ao entrar na viewport
-   ================================ */
+/* --- Reveal: animação de entrada por scroll --- */
 function initReveal() {
   const obs = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry, i) => {
         if (entry.isIntersecting) {
-          /* Escalonamento suave: cada elemento atrasa 80ms a mais que o anterior */
           setTimeout(() => entry.target.classList.add('visible'), i * 80);
           obs.unobserve(entry.target);
         }
@@ -128,61 +110,52 @@ function initReveal() {
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 }
 
-/* ================================
-   NAV
-   Efeito de scroll na navbar + toggle do menu mobile (hamburguer)
-   ================================ */
+/* --- Nav: scroll effect + mobile hamburger --- */
 function initNav() {
   const nav       = document.getElementById('nav');
   const hamburger = document.getElementById('hamburger');
   const navLinks  = document.getElementById('navLinks');
 
-  /* Adiciona .scrolled à nav ao rolar mais de 10px */
   window.addEventListener('scroll', () => {
     nav?.classList.toggle('scrolled', window.scrollY > 10);
   });
 
-  /* Abre/fecha o menu mobile ao clicar no hamburguer */
   hamburger?.addEventListener('click', () => {
     navLinks?.classList.toggle('open');
   });
 }
 
-/* ================================
-   THEME TOGGLE
-   Aplica o tema salvo no carregamento e alterna ao clicar no botão
-   ================================ */
+/* --- Theme toggle: aplica e alterna dark/light --- */
 function initTheme() {
-  /* Aplica tema salvo, ou dark como padrão */
-  const saved = localStorage.getItem('eq_theme') || 'dark';
+  const saved = localStorage.getItem('sage_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
 
   const btn = document.getElementById('themeToggle');
-  if (!btn) return;
+  const btnModal = document.getElementById('themeToggleModal');
 
-  btn.addEventListener('click', () => {
+  const toggleFn = () => {
     const current = document.documentElement.getAttribute('data-theme');
     const next    = current === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('eq_theme', next);
-  });
+    localStorage.setItem('sage_theme', next);
+  };
+
+  if (btn) btn.addEventListener('click', toggleFn);
+  if (btnModal) btnModal.addEventListener('click', toggleFn);
 }
 
-/* Aplica o tema imediatamente ao carregar o script, evitando flash de tema errado */
+/* Aplica tema imediatamente */
 initTheme();
 
-/* ================================
-   MOCKUP PLACEHOLDER (landing — animação de digitação)
-   Rotaciona frases no placeholder do mockup com efeito typewriter
-   ================================ */
+/* --- Mockup placeholder: typewriter na landing --- */
 function initMockupRotation() {
   const mockPlace = document.querySelector('.mockup__placeholder');
   if (!mockPlace) return;
 
   const variations = [
-    'Simplifique este texto para mim...',
-    'Traduza isto a partir deste contexto...',
-    'Converta minha fala em libras...',
+    'Me explique a fórmula de Bhaskara...',
+    'Como eu centralizo uma div no CSS?',
+    'Qual a diferença entre muy e mucho?',
   ];
 
   let i = 0;
@@ -195,7 +168,6 @@ function initMockupRotation() {
     mockPlace.textContent = '';
     mockPlace.style.opacity = '1';
 
-    /* Efeito typewriter: adiciona um caractere a cada 35ms */
     const interval = setInterval(() => {
       mockPlace.textContent = text.substring(0, j + 1);
       j++;

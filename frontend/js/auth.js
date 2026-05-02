@@ -1,15 +1,7 @@
-/* ================================
-   EQUALITY — auth.js
-   Login e Register
-   ================================ */
+/* SAGE AI — auth.js: login e registro */
 
-/* ================================
-   LOGIN
-   ================================ */
+/* --- Login --- */
 function initLoginPage() {
-  /* Redireciona para o chat se já estiver logado */
-  Auth.redirectIfLoggedIn();
-
   const form      = document.getElementById('loginForm');
   const btnText   = document.getElementById('loginBtnText');
   const spinner   = document.getElementById('loginSpinner');
@@ -17,11 +9,12 @@ function initLoginPage() {
   const toggleBtn = document.getElementById('togglePass');
   const passInput = document.getElementById('password');
 
-  /* Alterna visibilidade da senha */
+  /* Toggle visibilidade da senha */
   toggleBtn?.addEventListener('click', () => {
     passInput.type = passInput.type === 'password' ? 'text' : 'password';
   });
 
+  /* Submit do formulário */
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearErrors();
@@ -30,7 +23,6 @@ function initLoginPage() {
     const password = passInput.value;
     const remember = document.getElementById('remember')?.checked || false;
 
-    /* Validação de campos */
     let valid = true;
     if (!email || !email.includes('@'))   { showFieldError('emailErr', 'E-mail inválido'); valid = false; }
     if (!password || password.length < 6) { showFieldError('passErr',  'Senha muito curta'); valid = false; }
@@ -40,7 +32,7 @@ function initLoginPage() {
     try {
       const data = await Http.post(API.LOGIN, { email, password });
       Auth.save(data.token, data.user, remember);
-      window.location.href = 'chat.html';
+      window.location.href = 'app.html';
     } catch (err) {
       showFormError(formError, err.message || 'E-mail ou senha incorretos');
     } finally {
@@ -49,13 +41,8 @@ function initLoginPage() {
   });
 }
 
-/* ================================
-   REGISTER
-   ================================ */
+/* --- Registro --- */
 function initRegisterPage() {
-  /* Redireciona para o chat se já estiver logado */
-  Auth.redirectIfLoggedIn();
-
   const form         = document.getElementById('registerForm');
   const btnText      = document.getElementById('registerBtnText');
   const spinner      = document.getElementById('registerSpinner');
@@ -64,7 +51,7 @@ function initRegisterPage() {
   const passInput    = document.getElementById('password');
   const confirmInput = document.getElementById('confirmPassword');
 
-  /* Atualiza barra de força da senha em tempo real */
+  /* Barra de força da senha */
   passInput?.addEventListener('input', () => {
     const strength = getStrength(passInput.value);
     const fill     = document.getElementById('strengthFill');
@@ -83,11 +70,12 @@ function initRegisterPage() {
     label.textContent     = map[strength].text;
   });
 
-  /* Alterna visibilidade da senha */
+  /* Toggle visibilidade da senha */
   toggleBtn?.addEventListener('click', () => {
     passInput.type = passInput.type === 'password' ? 'text' : 'password';
   });
 
+  /* Submit do formulário */
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearErrors();
@@ -98,7 +86,6 @@ function initRegisterPage() {
     const confirm  = confirmInput.value;
     const terms    = document.getElementById('terms')?.checked ?? false;
 
-    /* Validação de campos */
     let valid = true;
     if (!name || name.length < 2)         { showFieldError('nameErr',    'Nome muito curto'); valid = false; }
     if (!email || !email.includes('@'))   { showFieldError('emailErr',   'E-mail inválido'); valid = false; }
@@ -111,7 +98,7 @@ function initRegisterPage() {
     try {
       const data = await Http.post(API.REGISTER, { name, email, password });
       Auth.save(data.token, data.user, false);
-      window.location.href = 'chat.html';
+      window.location.href = 'app.html';
     } catch (err) {
       showFormError(formError, err.message || 'Erro ao criar conta');
     } finally {
@@ -120,17 +107,15 @@ function initRegisterPage() {
   });
 }
 
-/* ================================
-   HELPERS
-   ================================ */
+/* --- Helpers --- */
 
-/* Exibe/oculta o spinner do botão de submit */
+/* Toggle spinner do botão */
 function setLoading(on, btnText, spinner) {
   btnText.style.display = on ? 'none' : 'inline';
   spinner.classList.toggle('active', on);
 }
 
-/* Exibe mensagem de erro em um campo específico e marca o input com .error */
+/* Exibe erro em campo específico */
 function showFieldError(id, msg) {
   const el = document.getElementById(id);
   if (el) el.textContent = msg;
@@ -139,14 +124,14 @@ function showFieldError(id, msg) {
   input?.classList.add('error');
 }
 
-/* Exibe o banner de erro global do formulário */
+/* Exibe banner de erro global */
 function showFormError(el, msg) {
   if (!el) return;
   el.textContent = msg;
   el.classList.add('active');
 }
 
-/* Limpa todos os erros de campo e o banner global */
+/* Limpa todos os erros */
 function clearErrors() {
   document.querySelectorAll('.field__error').forEach(el => el.textContent = '');
   document.querySelectorAll('input.error').forEach(el => el.classList.remove('error'));
@@ -154,7 +139,7 @@ function clearErrors() {
   if (fe) fe.classList.remove('active');
 }
 
-/* Calcula força da senha: 0 (vazia) → 1 (fraca) → 2 (média) → 3 (forte) */
+/* Calcula força da senha: 0 → 3 */
 function getStrength(val) {
   if (!val) return 0;
   let score = 0;
@@ -164,10 +149,6 @@ function getStrength(val) {
   return score;
 }
 
-/* ================================
-   AUTO-INVOCAÇÃO
-   Detecta a página atual pelo formulário presente e inicializa a função correta.
-   Substitui os scripts inline que foram removidos do HTML.
-   ================================ */
+/* --- Auto-detecção da página e inicialização --- */
 if (document.getElementById('loginForm'))    initLoginPage();
 if (document.getElementById('registerForm')) initRegisterPage();
